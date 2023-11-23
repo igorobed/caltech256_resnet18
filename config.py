@@ -32,7 +32,8 @@ transforms_val = A.Compose([
 ])
 
 # используемая модель("resnet18", "resnet18_my")
-model = get_resnet_model("resnet18")
+model_name = "resnet18_my"
+model = get_resnet_model(model_name)
 model.to(device)
 
 # количество эпох

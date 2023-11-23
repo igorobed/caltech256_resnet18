@@ -8,15 +8,14 @@ from tqdm import tqdm
 from loggers import logging
 from config import (
     device,
-    image_size,
-    batch_size,
     transforms_train,
     transforms_val,
     model,
     num_epochs,
     criterion,
     optimizer,
-    scheduler
+    scheduler,
+    model_name
 )
 
 
