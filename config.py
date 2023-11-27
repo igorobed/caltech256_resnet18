@@ -32,18 +32,22 @@ transforms_val = A.Compose([
 ])
 
 # используемая модель("resnet18", "resnet18_my")
-model_name = "resnet18_my"
+model_name = "resnet18"
 model = get_resnet_model(model_name)
 model.to(device)
 
 # количество эпох
-num_epochs = 3
+num_epochs = 30
 
 # лосс
-criterion = nn.CrossEntropyLoss()
+# criterion = nn.CrossEntropyLoss()
+loss = "crossentropy"
+# loss = "crossentropybalance"
+# loss = "kldiv"  # для использования этой штуки выход модели нужно обернуть в софтмакс
 
 # оптимизатор
 optimizer = optim.AdamW(model.parameters())
 
 # шедулер(может быть None)
-scheduler = lr_scheduler.StepLR(optimizer, step_size=5, gamma=0.1)
+# scheduler = lr_scheduler.StepLR(optimizer, step_size=5, gamma=0.1)
+scheduler = None

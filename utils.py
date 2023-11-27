@@ -1,4 +1,5 @@
 from os import listdir, mkdir
+import matplotlib.pyplot as plt
 
 
 def make_runs_subdir(mode: str = "train") -> str:
@@ -20,3 +21,20 @@ def make_runs_subdir(mode: str = "train") -> str:
         mkdir("./runs/" + subdir_name + "/weights")
 
     return subdir_name
+
+
+def save_loss_img(train_loss_lst, val_loss_lst, save_path):
+    plt.figure()
+    plt.xlabel("epoch")
+    plt.plot(train_loss_lst, label="train_loss")
+    plt.plot(val_loss_lst, label="valid_loss")
+    plt.legend()
+    plt.savefig(save_path)
+
+
+def save_acc_img(val_acc_lst, save_path):
+    plt.figure()
+    plt.xlabel("epoch")
+    plt.plot(val_acc_lst, label="valid acc")
+    plt.legend()
+    plt.savefig(save_path)

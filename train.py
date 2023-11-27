@@ -1,9 +1,11 @@
 from os import listdir
 import torch
-from utils import make_runs_subdir
+import torch.nn as nn
+from utils import make_runs_subdir, save_acc_img, save_loss_img
 from dataset import CaltechDataset, get_caltech_dataframe
 from torch.utils.data import DataLoader
 import time
+import numpy as np
 from tqdm import tqdm
 from loggers import logging
 from config import (
@@ -12,11 +14,12 @@ from config import (
     transforms_val,
     model,
     num_epochs,
-    criterion,
+    loss,
     optimizer,
     scheduler,
     model_name
 )
+from sklearn.utils.class_weight import compute_class_weight
 
 
 def train_model(
@@ -32,6 +35,11 @@ def train_model(
     since = time.time()
     path_save_best_model = save_path + "best.pt"
     best_acc = 0.0
+
+    val_loss_lst = []
+    train_loss_lst = []
+    val_acc_lst = []
+
     for epoch in range(num_epochs):
         print(f'Epoch {epoch}/{num_epochs - 1}')
         print('-' * 10)
@@ -70,11 +78,17 @@ def train_model(
                 running_loss += loss.item() * inputs.size(0)
                 running_corrects += torch.sum(preds == labels.data)
 
-            if phase == 'train':
+            if phase == 'train' and scheduler is not None:
                 scheduler.step()
             
             epoch_loss = running_loss / dataset_sizes[phase]
             epoch_acc = running_corrects.double() / dataset_sizes[phase]
+
+            if phase == "train":
+                train_loss_lst.append(epoch_loss)
+            elif phase == "val":
+                val_loss_lst.append(epoch_loss)
+                val_acc_lst.append(epoch_acc.item())
 
             print(f'{phase} Loss: {epoch_loss:.4f} Acc: {epoch_acc:.4f}')
 
@@ -89,8 +103,22 @@ def train_model(
     print(f'Training complete in {time_elapsed // 60:.0f}m {time_elapsed % 60:.0f}s')
     print(f'Best val Acc: {best_acc:4f}')
 
+    return {
+        "train_lst": train_loss_lst,
+        "val_lst": val_loss_lst,
+        "val_acc_lst": val_acc_lst
+    }
+
 
 def train():
+
+    # для воспроизводимости
+    seed = 42
+    torch.manual_seed(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+    np.random.seed(seed)
+
     # задаем параметры общего логгера
     # будет еще один логгер, который в поддирректорию будет записывать результаты обучения
     # на каждой эпохе
@@ -146,8 +174,22 @@ def train():
     }
 
     print("All good!")
+
+    if loss == "crossentropy":
+        criterion = nn.CrossEntropyLoss()
+    elif loss == "crossentropybalance":
+        # получим веса для каждого класса
+        all_train_lbls = []
+        for item, lbl in train_dataset:
+            all_train_lbls.append(lbl)
+        class_weights = compute_class_weight(class_weight='balanced', classes=np.unique(np.array(all_train_lbls)), y=np.array(all_train_lbls))
+        class_weights = torch.tensor(class_weights, dtype=torch.float).to(device)
+        criterion = nn.CrossEntropyLoss(weight=class_weights, reduction='mean')
+    elif loss == "kldiv":
+        criterion = nn.KLDivLoss()
+
     
-    train_model(
+    res_dict = train_model(
         model,
         criterion,
         optimizer,
@@ -157,6 +199,19 @@ def train():
         num_epochs,
         save_path=f"./runs/{results_dir}/weights/"
         )
+    
+    save_loss_img(
+        res_dict["train_lst"],
+        res_dict["val_lst"],
+        save_path=f"./runs/{results_dir}/loss.png"
+        )
+    
+    save_acc_img(
+        res_dict["val_acc_lst"],
+        save_path=f"./runs/{results_dir}/acc.png"
+        )
+    
+    # ЭКСПОРТ В ONNX ФОРМАТ
 
 
 if __name__ == "__main__":
