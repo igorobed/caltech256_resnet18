@@ -3,6 +3,9 @@ from torch.utils.data import Dataset
 import pandas as pd
 
 
+# надо добавить датасет для simclr
+
+
 class CaltechDataset(Dataset):
     def __init__(self, df, transforms):
         self.df = df

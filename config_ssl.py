@@ -38,13 +38,13 @@ mixup = True
 alpha=0.2
 
 # используемая модель("resnet18", "resnet18_my")
-model_name = "resnet18"
+model_name = "resnet18_simclr"
 model = get_resnet_model(model_name)
 # model.load_state_dict(torch.load("./runs/run_train_9/weights/best.pt"))
 model.to(device)
 
 # количество эпох
-num_epochs = 75
+num_epochs = 100
 # лосс
 label_smoothing = 0.1
 # criterion = nn.CrossEntropyLoss(label_smoothing=label_smoothing)
@@ -63,6 +63,3 @@ optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.9, nesterov=True, 
 # scheduler = lr_scheduler.CosineAnnealingLR(optimizer, 14, 1e-5)
 scheduler = lr_scheduler.ReduceLROnPlateau(optimizer, patience=3, verbose=True)
 scheduler_name = "ReduceLROnPlateau"
-
-
-
